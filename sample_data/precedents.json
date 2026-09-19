@@ -1,0 +1,17 @@
+[
+  {"id": "PUNE-DC2:NCR-014", "client": "HyperscaleCo", "site": "PUNE-DC2", "category": "ups",
+   "symptom": "UPS output voltage THD exceeded 3 % at high load step with non-linear IT load",
+   "root_cause": "Output filter capacitor bank degraded; inverter firmware below v4.2 lacks THD compensation",
+   "resolution": "Replace output filter capacitors and upgrade inverter firmware to v4.2; retest THD at 25/50/100 % load"},
+  {"id": "CHN-DC1:NCR-007", "client": "HyperscaleCo", "site": "CHN-DC1", "category": "ups",
+   "symptom": "UPS transfer time 9 ms on mains failure, exceeds 4 ms",
+   "root_cause": "Static bypass SCR gate driver fault",
+   "resolution": "Replace static switch gate driver board; verify transfer with power quality analyser"},
+  {"id": "HYD-DC3:NCR-022", "client": "HyperscaleCo", "site": "HYD-DC3", "category": "generator",
+   "symptom": "Generator failed to accept load within 10 s during IST",
+   "root_cause": "Low jacket-water heater temperature delaying governor ramp",
+   "resolution": "Repair jacket-water heater thermostat; set pre-heat alarm in BMS"},
+  {"id": "OTHER:NCR-001", "client": "RivalCloud", "site": "BLR-X", "category": "ups",
+   "symptom": "UPS output voltage THD high above 3 % at full load",
+   "root_cause": "RivalCloud confidential", "resolution": "RivalCloud confidential"}
+]

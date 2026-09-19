@@ -1,0 +1,16 @@
+{
+  "points": [
+    {"id": "ups1.transfer_time_ms", "category": "ups", "param": "transfer time", "unit": "ms"},
+    {"id": "ups1.output_voltage_v", "category": "ups", "param": "output voltage", "unit": "v"},
+    {"id": "ups1.output_voltage_thd_pct", "category": "ups", "param": "output voltage thd", "unit": "%"},
+    {"id": "ups1.battery_autonomy_min", "category": "ups", "param": "battery autonomy", "unit": "min"},
+    {"id": "dg1.start_to_load_s", "category": "generator", "param": "start accept load time", "unit": "s"}
+  ],
+  "readings": {
+    "ups1.transfer_time_ms": [["2027-02-03T10:00:00", 2.1], ["2027-02-03T10:05:00", 2.4], ["2027-02-03T10:10:00", 2.2]],
+    "ups1.output_voltage_v": [["2027-02-03T10:00:00", 414.2], ["2027-02-03T10:01:00", 416.9], ["2027-02-03T10:02:00", 415.3]],
+    "ups1.output_voltage_thd_pct": [["2027-02-03T10:00:00", 2.1], ["2027-02-03T10:01:00", 4.6], ["2027-02-03T10:02:00", 4.4]],
+    "ups1.battery_autonomy_min": [["2027-02-03T11:30:00", 12.5]],
+    "dg1.start_to_load_s": []
+  }
+}

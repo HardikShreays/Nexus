@@ -1,0 +1,5 @@
+[
+  {"id": "V-VOLTEDGE", "name": "VoltEdge Power Systems", "on_time_rate": 0.6, "utilization": 0.95},
+  {"id": "V-AMPCORE", "name": "AmpCore Industries", "on_time_rate": 0.75, "utilization": 0.7},
+  {"id": "V-GRIDSAFE", "name": "GridSafe Energy", "on_time_rate": 0.92, "utilization": 0.6}
+]

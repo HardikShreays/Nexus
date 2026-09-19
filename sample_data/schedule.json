@@ -1,0 +1,41 @@
+{
+  "today": "2026-09-19",
+  "activities": [
+    {"id": "A-100", "name": "UPS installation — Data Hall 1", "start": "2026-12-01", "duration": 20, "float": 5,
+     "trade": "electrical", "crew": 30, "pos": ["PO-UPS-1"]},
+    {"id": "A-110", "name": "Chiller installation — Plant room", "start": "2026-11-15", "duration": 25, "float": 10,
+     "trade": "mechanical", "crew": 20, "pos": ["PO-CHL-1"]},
+    {"id": "A-120", "name": "PDU & rack fit-out", "start": "2026-12-10", "duration": 15, "float": 20,
+     "trade": "electrical", "crew": 10, "pos": ["PO-PDU-1"]},
+    {"id": "A-200", "name": "HT energisation (132 kV)", "start": "2027-01-10", "duration": 5, "float": 0,
+     "trade": "electrical", "crew": 8, "grid": ["G-SUB"]},
+    {"id": "A-300", "name": "Integrated Systems Test (L5)", "start": "2027-02-01", "duration": 20, "float": 0,
+     "trade": "commissioning", "crew": 12, "preds": ["A-100", "A-110", "A-200"]},
+    {"id": "A-400", "name": "Client handover", "start": "2027-03-01", "duration": 2, "float": 0,
+     "trade": "commissioning", "crew": 4, "preds": ["A-300"]}
+  ],
+  "pos": [
+    {"id": "PO-UPS-1", "vendor": "V-VOLTEDGE", "category": "ups", "item": "UPS 500 kVA x 4", "status": "in_fab",
+     "issued": "2026-08-01", "committed_weeks": 14, "need_by": "2026-11-24", "value": 41000000, "origin": "CN"},
+    {"id": "PO-CHL-1", "vendor": "V-COOLAIR", "category": "chiller", "item": "Chiller 1000 TR x 3",
+     "status": "in_transit", "issued": "2026-06-01", "committed_weeks": 20, "eta": "2026-10-30",
+     "need_by": "2026-11-10", "value": 62000000, "port": "JNPT", "origin": "US"},
+    {"id": "PO-PDU-1", "vendor": "V-RACKWELL", "category": "pdu", "item": "PDU x 120", "status": "at_site",
+     "issued": "2026-07-01", "committed_weeks": 8, "need_by": "2026-12-01", "value": 9000000, "origin": "IN"}
+  ],
+  "grid_milestones": [
+    {"id": "G-SUB", "name": "132 kV substation commissioning (MSEDCL)", "due": "2027-01-05",
+     "forecast": "2027-01-25", "status": "bay approval pending"}
+  ],
+  "feeds": {
+    "port_congestion_days": {"JNPT": 14},
+    "customs_days": 3,
+    "workforce": {"electrical": 24, "mechanical": 22, "commissioning": 12},
+    "signals": [
+      {"kind": "shortage", "categories": ["ups"], "delay_days": 10, "severity": 0.6, "cost_pct": 6,
+       "note": "IGBT module shortage — UPS OEM lead times +2 weeks"},
+      {"kind": "price", "categories": ["switchgear", "ups"], "delay_days": 0, "severity": 0.3, "cost_pct": 8,
+       "note": "LME copper +12% QoQ"}
+    ]
+  }
+}
