@@ -1,13 +1,17 @@
 """Phase 0 — structured store, knowledge graph (edges table) and hash-chained audit log.
 
 ponytail: SQLite stands in for Aurora Postgres; same schema ports 1:1 (edges table = the
-"lighter graph layer on Postgres" option from the plan). Swap the connect() call when deploying.
+"lighter graph layer on Postgres" option from the plan). Swap the connect() call when the
+portfolio outgrows one Lambda's /tmp. Audit rows mirror to DynamoDB when EPC_AUDIT_TABLE is
+set — that is the immutable copy the plan asks for, outside the app's own write path.
 Every read/write takes `project` — that is the tenant boundary, there is no cross-project query.
 """
 import hashlib
 import json
 import sqlite3
 import time
+
+from . import aws
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS entities (project TEXT, id TEXT, kind TEXT, data TEXT, PRIMARY KEY (project, id));
@@ -66,9 +70,10 @@ class Store:
         ts = time.time()
         body = json.dumps(payload, sort_keys=True, default=str)
         h = hashlib.sha256(f"{prev}|{project}|{ts}|{actor}|{action}|{body}".encode()).hexdigest()
-        self.db.execute("INSERT INTO audit (project, ts, actor, action, payload, prev_hash, hash) VALUES (?,?,?,?,?,?,?)",
-                        (project, ts, actor, action, body, prev, h))
+        cur = self.db.execute("INSERT INTO audit (project, ts, actor, action, payload, prev_hash, hash) VALUES (?,?,?,?,?,?,?)",
+                              (project, ts, actor, action, body, prev, h))
         self.db.commit()
+        aws.put_audit(project, cur.lastrowid, ts, actor, action, body, prev, h)
         return h
 
     def audit_log(self, project):

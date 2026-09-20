@@ -1,12 +1,13 @@
 """Phase 4 — integration: event bus between engines, feedback loop, role dashboards.
 Phase 5 — scale & harden: multi-project portfolio with access control, threshold tuning.
 
-ponytail: in-process pub/sub. In AWS each `emit` becomes an EventBridge PutEvents and each
-handler a Lambda/Step Function target — handler signatures stay the same.
+ponytail: in-process pub/sub, plus an EventBridge PutEvents per emit when EPC_EVENT_BUS is
+set. Handlers stay in-process here; the bus is what a Lambda or Step Functions target hooks
+onto when an engine moves out of this deployment — handler signatures stay the same.
 """
 from collections import defaultdict
 
-from . import commissioning, risk, verification
+from . import aws, commissioning, risk, verification
 from .rag import Index
 from .store import Store
 
@@ -26,6 +27,7 @@ class Platform:
 
     def emit(self, project, event, payload):
         self.store.audit(project, "bus", f"event.{event}", payload)
+        aws.put_event(project, event, payload)
         for fn in self.handlers[event]:
             fn(project, payload)
 
