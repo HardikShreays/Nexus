@@ -247,6 +247,12 @@ toggleBtn.addEventListener('click', () => {
 
 const $ = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
 const esc = (s) => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+// evidence is a dict (auto: ts/value/point/note, manual: reading/photo/notes) — show the parts that matter, not [object Object]
+const evidenceText = (ev) => !ev ? '' : [
+  ev.value !== undefined ? `value=${ev.value}` : null,
+  ev.reading !== undefined ? `reading=${ev.reading}` : null,
+  ev.note || ev.notes || null,
+].filter(Boolean).join(' · ');
 const pct = (x) => (x * 100).toFixed(0) + '%';
 const sevClass = (s) => ({high:'bad', medium:'warn', low:'dim', none:'dim'}[s] || 'dim');
 const statusClass = (s) => ({compliant:'ok', passed:'ok', partial:'warn', needs_review:'warn', open:'bad',
@@ -254,6 +260,31 @@ const statusClass = (s) => ({compliant:'ok', passed:'ok', partial:'warn', needs_
 const tag = (s, cls) => `<span class="tag ${cls || statusClass(s)}">${esc(s)}</span>`;
 const table = (head, rows) =>
   `<table class="glass"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+
+// ponytail: covers the # / ## / **bold** / '- ' / '| a | b |' subset that package_markdown() emits, not full CommonMark
+const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+const renderMarkdown = (md) => {
+  const lines = md.split('\n');
+  const html = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\|/.test(line)) {
+      const head = line.slice(1, -1).split('|').map(c => c.trim());
+      i += 2; // skip header + '|---|' separator
+      const rows = [];
+      while (i < lines.length && /^\|/.test(lines[i])) {
+        rows.push(`<tr>${lines[i].slice(1, -1).split('|').map(c => `<td>${inline(c.trim())}</td>`).join('')}</tr>`);
+        i++;
+      }
+      i--;
+      html.push(table(head, rows));
+    } else if (/^# /.test(line)) html.push(`<h2>${inline(line.slice(2))}</h2>`);
+    else if (/^## /.test(line)) html.push(`<h3>${inline(line.slice(3))}</h3>`);
+    else if (/^- /.test(line)) html.push(`<div class="sub">${inline(line.slice(2))}</div>`);
+    else if (line.trim()) html.push(`<div>${inline(line)}</div>`);
+  }
+  return html.join('');
+};
 
 const TABS = {
   'Overview': (s) => {
@@ -319,7 +350,7 @@ const TABS = {
   'Engine 3 · Commissioning': (s) => {
     const cases = s.engine3.package.cases.map(c => `<tr>
       <td>${esc(c.text)}</td><td>${tag(c.mode, c.mode === 'auto' ? 'ok' : 'dim')}</td><td>${tag(c.status)}</td>
-      <td class="num sub">${esc((c.results || []).at(-1)?.evidence || '')}</td></tr>`);
+      <td class="num sub">${esc(evidenceText((c.results || []).at(-1)?.evidence))}</td></tr>`);
     const ncrs = s.engine3.ncrs.map(n => `<tr>
       <td class="num">${esc(n.id)}</td><td>${tag(n.status)}</td><td class="num">${esc(n.vendor || '—')}</td>
       <td>${esc(n.symptom)}<div class="sub">precedent ${esc(n.recommendations[0].precedent)}: ${esc(n.recommendations[0].resolution)}</div></td></tr>`);
@@ -331,7 +362,7 @@ const TABS = {
       <div class="cards">${cards}</div>
       <h2>Test cases</h2>${table(['Case', 'Mode', 'Status', 'Evidence'], cases)}
       <h2>Non-conformance reports</h2>${table(['NCR', 'Status', 'Vendor', 'Symptom / recommendation'], ncrs)}
-      <h2>As-commissioned markdown</h2><pre class="glass">${esc(s.engine3.markdown)}</pre>`;
+      <h2>As-commissioned markdown</h2><div class="glass">${renderMarkdown(s.engine3.markdown)}</div>`;
   },
 
   'Audit trail': (s) => {

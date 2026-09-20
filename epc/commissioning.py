@@ -131,12 +131,21 @@ def _record(store, index, project, case, result, actor):
     return case
 
 
+def _evidence_text(ev):
+    """Evidence is a dict (auto: ts/value/point/note, manual: reading/photo/notes) — the readable
+    parts, not the dict repr NCR symptoms and the markdown export used to show."""
+    ev = ev or {}
+    parts = [f"value={ev['value']}" if "value" in ev else None,
+             f"reading={ev['reading']}" if "reading" in ev else None,
+             ev.get("note") or ev.get("notes")]
+    return " · ".join(p for p in parts if p)
+
+
 # ---------------------------------------------------------------- NCR + RAG
 def open_ncr(store, index, project, case, result, actor="engine3"):
     n = len(store.find(project, "ncr")) + 1
     nid = f"NCR-{n:03d}"
-    ev = result.get("evidence") or {}
-    symptom = f"{case['text']} — {ev.get('note') or ev.get('notes') or result.get('note', '')}"
+    symptom = f"{case['text']} — {_evidence_text(result.get('evidence')) or result.get('note', '')}"
     po = next(iter(store.find(project, "po", category=case["category"])), None)
     ncr = store.put(project, "ncr", nid, {
         "case": case["id"], "category": case["category"], "symptom": symptom, "status": "open",
@@ -204,7 +213,7 @@ def package_markdown(pkg):
              f"NCRs open {s['ncr_open']} / closed {s['ncr_closed']}", "", "| Case | Mode | Status | Evidence |", "|---|---|---|---|"]
     for c in pkg["cases"]:
         ev = c["results"][-1].get("evidence") if c["results"] else None
-        lines.append(f"| {c['text']} | {c['mode']} | {c['status']} | {ev or ''} |")
+        lines.append(f"| {c['text']} | {c['mode']} | {c['status']} | {_evidence_text(ev)} |")
     for n in pkg["ncrs"]:
         lines += ["", f"## {n['id']} ({n['status']})", f"- Symptom: {n['symptom']}",
                   f"- Resolution: {n.get('resolution') or n['recommendations'][0]['resolution']}"]
