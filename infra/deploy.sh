@@ -45,7 +45,7 @@ aws iam put-role-policy --role-name "$ROLE" --policy-name epc-engines --policy-d
  {"Effect":"Allow","Action":"dynamodb:PutItem","Resource":"arn:aws:dynamodb:$AWS_REGION:$ACCOUNT:table/$TABLE"},
  {"Effect":"Allow","Action":"events:PutEvents","Resource":"arn:aws:events:$AWS_REGION:$ACCOUNT:event-bus/$BUS"},
  {"Effect":"Allow","Action":["textract:DetectDocumentText"],"Resource":"*"},
- {"Effect":"Allow","Action":["bedrock:InvokeModel","bedrock:InvokeModelWithResponseStream"],"Resource":"*"}]}
+ {"Effect":"Allow","Action":["bedrock:InvokeModel","bedrock:InvokeModelWithResponseStream","bedrock-mantle:CreateInference"],"Resource":"*"}]}
 JSON
 )"
 
@@ -59,7 +59,9 @@ pip install -q --target "$BUILD" --only-binary=:all: \
   'anthropic[bedrock]'   # Bedrock client; the app itself is stdlib
 (cd "$BUILD" && zip -qr "$BUILD/app.zip" . -x '*.pyc' '*/__pycache__/*')
 
-ENV="Variables={EPC_S3_BUCKET=$BUCKET,EPC_AUDIT_TABLE=$TABLE,EPC_EVENT_BUS=$BUS,EPC_LLM=1,EPC_MODEL=anthropic.claude-opus-5}"
+# EPC_LLM defaults off: Opus 5 needs Bedrock model access granted in the console first
+# (Model access page) or every request 500s with a permission_error from Bedrock, not IAM.
+ENV="Variables={EPC_S3_BUCKET=$BUCKET,EPC_AUDIT_TABLE=$TABLE,EPC_EVENT_BUS=$BUS,EPC_LLM=${EPC_LLM:-0},EPC_MODEL=anthropic.claude-opus-5}"
 if aws lambda get-function --function-name "$NAME" >/dev/null 2>&1; then
   aws lambda update-function-code --function-name "$NAME" --zip-file "fileb://$BUILD/app.zip" >/dev/null
   aws lambda wait function-updated --function-name "$NAME"
@@ -73,8 +75,11 @@ else
 fi
 
 # --- public URL ---------------------------------------------------------------
+# Both statements are required since Oct 2025: InvokeFunctionUrl alone 403s every call.
 aws lambda add-permission --function-name "$NAME" --statement-id public-url \
   --action lambda:InvokeFunctionUrl --principal '*' --function-url-auth-type NONE >/dev/null 2>&1 || true
+aws lambda add-permission --function-name "$NAME" --statement-id public-invoke-function \
+  --action lambda:InvokeFunction --principal '*' --invoked-via-function-url >/dev/null 2>&1 || true
 URL=$(aws lambda create-function-url-config --function-name "$NAME" --auth-type NONE \
         --query FunctionUrl --output text 2>/dev/null \
       || aws lambda get-function-url-config --function-name "$NAME" --query FunctionUrl --output text)

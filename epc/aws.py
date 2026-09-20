@@ -49,17 +49,29 @@ def textract_text(bucket, key):
 
 
 def put_audit(project, seq, ts, actor, action, payload, prev_hash, hash):
-    """Mirror one hash-chained audit row into DynamoDB. The condition makes it append-only."""
+    """Mirror one hash-chained audit row into DynamoDB. The condition makes it append-only.
+
+    ponytail: the in-memory Store rebuilds from seq 1 on every cold start, so the same
+    (project, seq) gets replayed on each one — that replay is expected, not tampering, so it's
+    swallowed. A genuine tamper attempt writes a *different* hash for that seq, which this
+    can't detect; append-only storage that survives cold starts closes that gap for real.
+    """
     table = os.environ.get("EPC_AUDIT_TABLE")
     if not table:
         return
-    _client("dynamodb").put_item(
-        TableName=table,
-        Item={"project": {"S": project}, "seq": {"N": str(seq)}, "ts": {"N": repr(ts)},
-              "actor": {"S": actor}, "action": {"S": action}, "payload": {"S": payload},
-              "prev_hash": {"S": prev_hash}, "hash": {"S": hash}},
-        ConditionExpression="attribute_not_exists(#p) AND attribute_not_exists(#s)",
-        ExpressionAttributeNames={"#p": "project", "#s": "seq"})
+    from botocore.exceptions import ClientError
+
+    try:
+        _client("dynamodb").put_item(
+            TableName=table,
+            Item={"project": {"S": project}, "seq": {"N": str(seq)}, "ts": {"N": repr(ts)},
+                  "actor": {"S": actor}, "action": {"S": action}, "payload": {"S": payload},
+                  "prev_hash": {"S": prev_hash}, "hash": {"S": hash}},
+            ConditionExpression="attribute_not_exists(#p) AND attribute_not_exists(#s)",
+            ExpressionAttributeNames={"#p": "project", "#s": "seq"})
+    except ClientError as e:
+        if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+            raise
 
 
 def put_event(project, event, payload):

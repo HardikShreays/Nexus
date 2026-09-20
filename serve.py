@@ -64,8 +64,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.split("?")[0] != "/api/state":
             return super().do_GET()
-        body = json.dumps(state()).encode()
-        self.send_response(200)
+        try:
+            body = json.dumps(state()).encode()
+            code = 200
+        except Exception as e:
+            body = json.dumps({"error": str(e)}).encode()
+            code = 500
+        self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
@@ -79,8 +84,11 @@ def handler(event, context):
     """AWS Lambda Function URL entry point (payload format 2.0)."""
     path = event.get("rawPath", "/").split("?")[0]
     if path == "/api/state":
-        return {"statusCode": 200, "headers": {"Content-Type": "application/json"},
-                "body": json.dumps(state())}
+        try:
+            body, code = json.dumps(state()), 200
+        except Exception as e:
+            body, code = json.dumps({"error": str(e)}), 500
+        return {"statusCode": code, "headers": {"Content-Type": "application/json"}, "body": body}
     if path == "/app" or path == "/app.html":
         return {"statusCode": 200, "headers": {"Content-Type": "text/html; charset=utf-8"},
                 "body": (HERE / "web" / "app.html").read_text()}
