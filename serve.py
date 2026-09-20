@@ -7,6 +7,7 @@ same swap-in points as demo.py. Add a front door only when this needs auth or a 
 """
 import http.server
 import json
+import os
 import pathlib
 
 import demo
@@ -97,7 +98,8 @@ def handler(event, context):
 
 
 if __name__ == "__main__":
-    print("running pipeline...")
+    port = int(os.environ.get("EPC_PORT", "8000"))
+    print("running pipeline...", flush=True)
     state()
-    print("http://localhost:8000")
-    http.server.HTTPServer(("127.0.0.1", 8000), Handler).serve_forever()
+    print(f"http://localhost:{port}", flush=True)
+    http.server.HTTPServer(("127.0.0.1", port), Handler).serve_forever()
