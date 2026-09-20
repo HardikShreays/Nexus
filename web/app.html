@@ -256,7 +256,7 @@ const evidenceText = (ev) => !ev ? '' : [
 const pct = (x) => (x * 100).toFixed(0) + '%';
 const sevClass = (s) => ({high:'bad', medium:'warn', low:'dim', none:'dim'}[s] || 'dim');
 const statusClass = (s) => ({compliant:'ok', passed:'ok', partial:'warn', needs_review:'warn', open:'bad',
-                             deviation:'bad', missing:'bad'}[s] || 'dim');
+                             deviation:'bad', missing:'bad', failed:'bad', no_data:'warn'}[s] || 'dim');
 const tag = (s, cls) => `<span class="tag ${cls || statusClass(s)}">${esc(s)}</span>`;
 const table = (head, rows) =>
   `<table class="glass"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
