@@ -45,7 +45,9 @@ Your original flow, retained and extended:
                                              ▼
                         ┌─────────────────────────────────────────────┐
                         │  CLOUD PLATFORM (AWS)                        │
-                        │  Ingestion → Storage → Vector/Graph Index    │
+                        │  Textract → S3 → Vector/Graph Index          │
+                        │  Lambda + Function URL · Bedrock (Claude)    │
+                        │  EventBridge · DynamoDB audit · IAM          │
                         └───────────────────┬───────────────────────────┘
                                              │
                     ┌────────────────────────┼────────────────────────────┐
@@ -186,19 +188,20 @@ Your original flow, retained and extended:
 
 ## 5. Shared Platform Layer (New — Connective Tissue)
 
-| Layer | Purpose | Suggested Tech |
-|---|---|---|
-| **Ingestion** | OCR/parse PDFs, DWGs, spreadsheets, emails into structured + embedded data | AWS Textract / Unstructured.io, Apache Tika for office docs |
-| **Object storage** | Raw + processed documents | Amazon S3 (versioned, per-project prefix) |
-| **Structured data store** | Equipment registry, PO status, vendor master, schedule state | Amazon RDS/Aurora (Postgres) |
-| **Vector store** | Clause/spec/test-case embeddings for RAG | Amazon OpenSearch (with k-NN) or pgvector on Aurora |
-| **Knowledge graph** | Entity relationships: equipment ↔ vendor ↔ PO ↔ spec clause ↔ test case ↔ NCR | Amazon Neptune, or a lighter graph layer on Postgres (edges table) if team is small |
-| **LLM/reasoning layer** | All three engines' agentic reasoning | Claude (via Amazon Bedrock) — Claude Opus/Sonnet for reasoning-heavy compliance/risk-fusion tasks, Claude Haiku for high-volume clause classification |
-| **Orchestration** | Multi-agent workflow, event-driven triggers between engines | AWS Step Functions + EventBridge, or LangGraph/an agent framework on top of Bedrock |
-| **External data feeds** | Shipment tracking, weather, commodity prices, news/geopolitical signals | Carrier/logistics APIs, weather APIs, commodity price APIs, news APIs — normalized into EventBridge events |
-| **Field/mobile app** | Engineer test execution, photo/signature capture | React Native or lightweight PWA |
-| **Dashboard/UI** | PM, procurement, quality engineer views | React + a BI layer (or Amazon QuickSight for exec dashboards) |
-| **Audit & access control** | Immutable audit trail, role-based access | S3 Object Lock / DynamoDB append log, AWS IAM + Cognito |
+| Layer | Purpose | AWS service | Built |
+|---|---|---|---|
+| **Compute & public entry point** | Serve the platform; run the three engines per request | AWS Lambda (python3.12) + Function URL | ✅ `serve.handler`, `infra/deploy.sh` |
+| **Ingestion** | OCR/parse PDFs, DWGs, spreadsheets, emails into structured + embedded data | Amazon Textract (`DetectDocumentText`) | ✅ `aws.textract_text` — single-page/image; multi-page PDFs need the async API |
+| **Object storage** | Raw + processed documents | Amazon S3 (versioned, per-project prefix) | ✅ `aws.read_doc`, `EPC_S3_BUCKET` |
+| **Structured data store** | Equipment registry, PO status, vendor master, schedule state | Amazon RDS/Aurora (Postgres) | ⏳ SQLite with the identical schema; swap `Store.__init__` |
+| **Vector store** | Clause/spec/test-case embeddings for RAG | Amazon OpenSearch (with k-NN) or pgvector on Aurora | ⏳ TF-IDF cosine; swap `Index._vec` past ~100k chunks |
+| **Knowledge graph** | Entity relationships: equipment ↔ vendor ↔ PO ↔ spec clause ↔ test case ↔ NCR | Amazon Neptune, or a lighter graph layer on Postgres (edges table) if team is small | ✅ edges table (the lighter option), moves with the structured store |
+| **LLM/reasoning layer** | All three engines' agentic reasoning | Claude Opus 5 via Amazon Bedrock (`anthropic.claude-opus-5`); Claude Haiku for high-volume clause classification | ✅ `epc/llm.py`, `EPC_LLM=1` — advisory only, never auto-clears |
+| **Orchestration** | Multi-agent workflow, event-driven triggers between engines | Amazon EventBridge; AWS Step Functions for cross-service workflows | ✅ every `Platform.emit` publishes; handlers still in-process |
+| **External data feeds** | Shipment tracking, weather, commodity prices, news/geopolitical signals | Carrier/logistics APIs, weather APIs, commodity price APIs, news APIs — normalized into EventBridge events | ⏳ `sample_data/*.json` stands in for the feeds |
+| **Field/mobile app** | Engineer test execution, photo/signature capture | React Native or lightweight PWA | ⏳ not started |
+| **Dashboard/UI** | PM, procurement, quality engineer views | Served from the same Lambda; Amazon QuickSight for exec dashboards | ✅ `web/index.html` + `/api/state` |
+| **Audit & access control** | Immutable audit trail, role-based access | Amazon DynamoDB append log (conditional write), AWS IAM; Amazon Cognito for user identity | ✅ `Store.audit` mirrors to DynamoDB, least-privilege IAM role; ⏳ Cognito — roles are still application-level |
 
 ---
 
@@ -247,6 +250,40 @@ This graph is what lets a finding in one engine automatically matter to another 
 ### Phase 5 — Scale & Harden (ongoing)
 - Multi-project rollout, portfolio-level dashboards, expand RAG corpus across projects (with proper data governance — see Section 8), tune automation thresholds as trust builds.
 
+### Phase 6 — AWS Deployment (continuous, from Phase 0 onward)
+- Bind each layer of Section 5 to its AWS service behind an environment variable, so the engines keep running unchanged on a laptop with no AWS account — that is what makes the test suite deterministic and offline.
+- Deploy with `infra/deploy.sh`: it provisions S3 (versioned), DynamoDB, an EventBridge bus, a least-privilege IAM role, then packages and publishes the Lambda and returns its Function URL.
+- Success gate: the deployed URL serves the same pipeline the offline demo does, the audit chain still verifies after a run, and every AWS permission in the role is scoped to a named resource ARN rather than `*` (Textract and Bedrock excepted — neither is resource-scopable for these actions).
+
+#### Deployed topology
+
+```
+Lambda Function URL (public, no auth)
+        │
+        ▼
+AWS Lambda  serve.handler  ·  python3.12  ·  1024 MB  ·  60 s
+   Engine 1 Verification · Engine 2 Risk · Engine 3 Commissioning
+        │
+   ┌────┴─────┬──────────┬────────────┬──────────────┐
+   ▼          ▼          ▼            ▼              ▼
+  S3      Textract    Bedrock     DynamoDB      EventBridge
+versioned  scanned   Claude       audit rows,   engine events
+documents  pages     Opus 5       conditional   to Step Functions
+                     reasoning    append-only   targets later
+```
+
+| Variable | Effect when set |
+|---|---|
+| `EPC_S3_BUCKET` | Documents load from S3; scanned pages route through Textract |
+| `EPC_AUDIT_TABLE` | Every hash-chained audit row mirrors to DynamoDB under an append-only condition |
+| `EPC_EVENT_BUS` | Every engine event publishes to EventBridge |
+| `EPC_LLM=1` | Clause reasoning calls Claude on Bedrock (`EPC_MODEL`, default `anthropic.claude-opus-5`) |
+
+Unset, each binding is inert — no boto3 import, no credentials, no network call.
+
+#### Cost and blast radius
+Lambda, DynamoDB on-demand and EventBridge are effectively free at demo volume; S3 holds a few hundred KB. Bedrock is the only meaningful line item and it is off unless `EPC_LLM=1`. The Function URL is public by design for the demo — put Cognito or IAM auth in front of it before any real tender data goes near it.
+
 ---
 
 ## 8. Security, Compliance & Governance
@@ -256,6 +293,7 @@ This graph is what lets a finding in one engine automatically matter to another 
 - **AI-generated content in the audit trail**: every AI-flagged deviation and every auto-executed test result must carry provenance (model version, prompt/inputs, confidence score, human reviewer if applicable). This is non-negotiable for Tier III/IV certification and for any future contractual dispute.
 - **Cross-project RAG data (Section 4.3)**: get explicit data-sharing agreements before pooling NCR/failure data across clients' projects, even anonymized. Default to per-client-siloed corpora unless a contract says otherwise.
 - **Human sign-off boundary**: define contractually and technically which checks can *never* be fully automated (safety-critical, licensed-engineer-required per code) vs. which can be system-cleared — this boundary should be configurable per client/jurisdiction, not hardcoded.
+- **AWS controls in place today**: S3 bucket versioning; a DynamoDB audit mirror written under `attribute_not_exists` so a row cannot be overwritten by the application that wrote it; an execution role scoped to the named bucket, table and event bus. **Still open**: Cognito for user identity (roles are application-level today), S3 Object Lock for regulatory retention, KMS customer-managed keys, and auth in front of the Function URL.
 
 ---
 

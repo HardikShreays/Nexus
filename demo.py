@@ -2,6 +2,7 @@
 import json
 import pathlib
 
+from epc import aws
 from epc.commissioning import add_precedent
 from epc.ingest import ingest
 from epc.rag import Index
@@ -17,7 +18,7 @@ BIDS = [("BID-VOLTEDGE", "bid_voltedge.md", "V-VOLTEDGE", 41_000_000),
 def load_pilot(store=None, index=None, project=P):
     """Phase 0: ingest tender, versioned policy snapshots, bids and vendor master."""
     store, index = store or Store(), index or Index()
-    read = lambda f: (DATA / f).read_text()  # noqa: E731
+    read = lambda f: aws.read_doc(DATA / f)  # S3 + Textract when EPC_S3_BUCKET is set  # noqa: E731
     store.put(project, "project", project, {"name": "Mumbai DC1 — 24 MW hyperscale", "client": "HyperscaleCo"})
     ingest(store, index, project, "TENDER", read("tender.md"), "tender")
     ingest(store, index, project, "CEA-2025", read("policy_cea_2025.md"), "policy",
