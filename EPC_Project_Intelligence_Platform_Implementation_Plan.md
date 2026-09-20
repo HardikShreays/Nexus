@@ -37,75 +37,56 @@ This plan keeps your original tech flow intact and adds the connective tissue ne
 
 Your original flow, retained and extended:
 
-```
-                        ┌─────────────────────────────────────────────┐
-                        │   COMPANY (EPC Owner / Contractor)           │
-                        └───────────────────┬───────────────────────────┘
-                                             │ tender issued
-                                             ▼
-                        ┌─────────────────────────────────────────────┐
-                        │  CLOUD PLATFORM (AWS)                        │
-                        │  Textract → S3 → Vector/Graph Index          │
-                        │  Lambda + Function URL · Bedrock (Claude)    │
-                        │  EventBridge · DynamoDB audit · IAM          │
-                        └───────────────────┬───────────────────────────┘
-                                             │
-                    ┌────────────────────────┼────────────────────────────┐
-                    ▼                        ▼                            ▼
-         ┌──────────────────┐     ┌──────────────────────┐     ┌───────────────────────┐
-         │ Tender Document    │     │ Vendor Bids            │     │ Govt Policy / Codes   │
-         │ (specs, BOQ,       │     │ (technical + comm'l)  │     │ (TIA-942, BIS, CEA,   │
-         │ design standards,  │     │                        │     │ CERC, state DC policy)│
-         │ client requirements)│     └──────────┬────────────┘     └──────────┬────────────┘
-         └─────────┬──────────┘                │                              │
-                    └────────────┬──────────────┴──────────────┬───────────────┘
-                                 ▼                              ▼
-                    ┌───────────────────────────────────────────────────────┐
-                    │  ENGINE 1 — SPECIFICATION & QUALITY                     │
-                    │  COMPLIANCE VERIFICATION ENGINE                         │
-                    │  RAG-based clause-to-clause matching + policy compliance│
-                    │  + vendor timeline & fulfilment-capacity scoring        │
-                    │  Output: Conformance report, flagged deviations,        │
-                    │  vendor risk score, audit trail entry                   │
-                    └───────────────────────┬───────────────────────────────┘
-                                             │ approved/flagged vendors,
-                                             │ PO data, lead times
-                                             ▼
-                    ┌───────────────────────────────────────────────────────┐
-                    │  ENGINE 2 — PREDICTIVE SCHEDULE & SUPPLY CHAIN          │
-                    │  RISK ENGINE  (multi-agent)                             │
-                    │  Inputs: schedule (P6/MSP), procurement status,         │
-                    │  shipment tracking, workforce availability,             │
-                    │  electricity grid/utility hookup timeline,              │
-                    │  global equipment shortage signals, geopolitical &      │
-                    │  natural-disaster feeds, commodity/price indices        │
-                    │  Output: Critical-path risk score + ranked mitigation   │
-                    │  options (not just alerts)                              │
-                    └───────────────────────┬───────────────────────────────┘
-                                             │ site-ready equipment,
-                                             │ updated schedule state
-                                             ▼
-                    ┌───────────────────────────────────────────────────────┐
-                    │  ENGINE 3 — COMMISSIONING QUALITY ASSURANCE COPILOT     │
-                    │  Ingests test/inspection documents (TIA-942, BICSI,     │
-                    │  Uptime Institute Tier specs, IST procedures)           │
-                    │  → splits checks: machine-verifiable vs. engineer-only  │
-                    │  → auto-generates test cases for both                   │
-                    │  → executes automatable checks, routes rest to          │
-                    │    engineers with generated test scripts                │
-                    │  → RAG over cross-site historical failure/resolution    │
-                    │    corpus → recommends fixes for failures               │
-                    │  Output: As-commissioned quality package + open NCRs    │
-                    └───────────────────────┬───────────────────────────────┘
-                                             │
-                                             ▼
-                    ┌───────────────────────────────────────────────────────┐
-                    │  PROJECT KNOWLEDGE GRAPH + FEEDBACK LOOP                │
-                    │  Every finding, resolution, deviation, and delay is     │
-                    │  written back — becomes training/RAG data for the      │
-                    │  next tender, the next risk model run, the next         │
-                    │  commissioning cycle (this project AND future ones)     │
-                    └───────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Company[COMPANY<br><i>EPC Owner / Contractor</i>]
+    
+    subgraph Cloud [CLOUD PLATFORM AWS]
+        Services["Textract → S3 → Vector/Graph Index<br>Lambda + Function URL · Bedrock (Claude)<br>EventBridge · DynamoDB audit · IAM"]
+    end
+    
+    Company -- "tender issued" --> Cloud
+    
+    subgraph Inputs [Document Ingestion Layer]
+        Tender["Tender Document<br>(specs, BOQ, design standards, client requirements)"]
+        Bids["Vendor Bids<br>(technical + comm'l)"]
+        Policy["Govt Policy / Codes<br>(TIA-942, BIS, CEA, CERC, state DC policy)"]
+    end
+    
+    Cloud --> Tender
+    Cloud --> Bids
+    Cloud --> Policy
+    
+    Engine1["<b>ENGINE 1 — SPECIFICATION & QUALITY COMPLIANCE VERIFICATION ENGINE</b><br><br>RAG-based clause-to-clause matching + policy compliance<br>+ vendor timeline & fulfilment-capacity scoring<br><br><b>Output:</b> Conformance report, flagged deviations, vendor risk score, audit trail entry"]
+    
+    Tender --> Engine1
+    Bids --> Engine1
+    Policy --> Engine1
+    
+    Engine2["<b>ENGINE 2 — PREDICTIVE SCHEDULE & SUPPLY CHAIN RISK ENGINE (multi-agent)</b><br><br><b>Inputs:</b> schedule (P6/MSP), procurement status, shipment tracking, workforce availability,<br>electricity grid/utility hookup timeline, global equipment shortage signals,<br>geopolitical & natural-disaster feeds, commodity/price indices<br><br><b>Output:</b> Critical-path risk score + ranked mitigation options (not just alerts)"]
+    
+    Engine1 -- "approved/flagged vendors,<br>PO data, lead times" --> Engine2
+    
+    Engine3["<b>ENGINE 3 — COMMISSIONING QUALITY ASSURANCE COPILOT</b><br><br>Ingests test/inspection documents (TIA-942, BICSI, Uptime Tier specs, IST procedures)<br>→ splits checks: machine-verifiable vs. engineer-only<br>→ auto-generates test cases for both<br>→ executes automatable checks, routes rest to engineers with generated test scripts<br>→ RAG over cross-site historical failure/resolution corpus → recommends fixes for failures<br><br><b>Output:</b> As-commissioned quality package + open NCRs"]
+    
+    Engine2 -- "site-ready equipment,<br>updated schedule state" --> Engine3
+    
+    KG["<b>PROJECT KNOWLEDGE GRAPH + FEEDBACK LOOP</b><br><br>Every finding, resolution, deviation, and delay is written back — becomes training/RAG data for the<br>next tender, the next risk model run, the next commissioning cycle (this project AND future ones)"]
+    
+    Engine3 --> KG
+    KG -. "Feedback loop feeds back into Cloud" .-> Cloud
+    
+    classDef company fill:#1e3a5f,stroke:#3b82f6,color:#fff;
+    classDef cloud fill:#0f2744,stroke:#3b82f6,color:#fff;
+    classDef input fill:#264d7a,stroke:#3b82f6,color:#fff;
+    classDef engine fill:#8b5cf6,stroke:#a78bfa,color:#fff;
+    classDef graph fill:#16a34a,stroke:#4ade80,color:#fff;
+    
+    class Company company;
+    class Cloud,Services cloud;
+    class Tender,Bids,Policy input;
+    class Engine1,Engine2,Engine3 engine;
+    class KG graph;
 ```
 
 **What I added to your flow (and why):**

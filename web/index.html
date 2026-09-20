@@ -3,177 +3,748 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nexus — EPC Project Intelligence</title>
+<title>Nexus — Next-Gen EPC Project Intelligence</title>
+<meta name="description" content="AI-native platform for EPC project verification, risk assessment, and commissioning quality assurance.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
   :root {
-    --bg: #0e1116; --panel: #161b22; --line: #262d38; --ink: #e6edf3; --dim: #8b949e;
-    --accent: #58a6ff; --ok: #3fb950; --warn: #d29922; --bad: #f85149;
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    --bg: #06060a;
+    --bg2: #0c0c14;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.08);
+    --border: rgba(255,255,255,0.08);
+    --ink: #f1f5f9;
+    --dim: #64748b;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent2: #8b5cf6;
+    --glow: rgba(59,130,246,0.15);
+    --glow2: rgba(139,92,246,0.15);
+    --radius: 16px;
+    --mono: 'JetBrains Mono', monospace;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  header { padding: 20px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
-  h1 { font-size: 18px; margin: 0; letter-spacing: -.01em; }
-  h1 span { color: var(--dim); font-weight: 400; }
-  .meta { color: var(--dim); font-family: var(--mono); font-size: 12px; margin-left: auto; }
-  nav { display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--line); overflow-x: auto; }
-  nav button { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--dim); padding: 12px 14px;
-               font: inherit; cursor: pointer; white-space: nowrap; }
-  nav button:hover { color: var(--ink); }
-  nav button[aria-selected=true] { color: var(--ink); border-bottom-color: var(--accent); }
-  main { padding: 24px; max-width: 1200px; }
-  section { display: none; }
-  section.on { display: block; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin: 28px 0 10px; font-weight: 600; }
-  h2:first-child { margin-top: 0; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
-  .card .k { color: var(--dim); font-size: 12px; }
-  .card .v { font-size: 24px; font-variant-numeric: tabular-nums; margin-top: 4px; }
-  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--dim); font-size: 12px; font-weight: 600; }
-  tr:last-child td { border-bottom: 0; }
-  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-family: var(--mono);
-         border: 1px solid currentColor; }
-  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); } .dim { color: var(--dim); }
-  .sub { color: var(--dim); font-size: 12px; }
-  ul.sig { margin: 6px 0 0; padding-left: 16px; color: var(--dim); font-size: 12px; }
-  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow: auto;
-        font-family: var(--mono); font-size: 12px; white-space: pre-wrap; }
-  .bar { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 6px; }
-  .bar i { display: block; height: 100%; background: var(--accent); }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 'Inter', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Floating Particles Canvas ─── */
+  #particles {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ─── Navbar ─── */
+  .navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 0 48px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(6, 6, 10, 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .navbar.scrolled {
+    border-bottom-color: var(--border);
+    background: rgba(6, 6, 10, 0.9);
+  }
+
+  .nav-brand {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-brand .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: all 0.2s;
+  }
+  .nav-links a:hover {
+    color: var(--ink);
+    background: var(--surface-hover);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: 999px;
+    font: 600 14px/1 'Inter', sans-serif;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+  }
+  .btn-glow {
+    background: linear-gradient(135deg, #1e3a5f, #0f2744);
+    color: #e0eaff;
+    box-shadow: 0 0 20px rgba(30,58,95,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .btn-glow:hover {
+    transform: translateY(-2px) scale(1.02);
+    background: linear-gradient(135deg, #264d7a, #1a3d5c);
+    box-shadow: 0 0 28px rgba(38,77,122,0.5), 0 6px 24px rgba(0,0,0,0.35);
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover {
+    background: var(--surface-hover);
+    border-color: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+  }
+
+  /* ─── Sections ─── */
+  .page-section {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  /* ─── Hero ─── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding-top: 72px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px 6px 8px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: slideUp 0.6s 0.2s ease-out forwards;
+  }
+  .hero-badge .badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+  }
+
+  .hero h1 {
+    font-size: clamp(48px, 7vw, 80px);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: slideUp 0.8s 0.4s ease-out forwards;
+  }
+  .hero h1 .grad {
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--dim);
+    max-width: 600px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: slideUp 0.8s 0.6s ease-out forwards;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    opacity: 0;
+    animation: slideUp 0.8s 0.8s ease-out forwards;
+  }
+
+  .hero-visual {
+    margin-top: 80px;
+    width: 100%;
+    max-width: 900px;
+    perspective: 1200px;
+    opacity: 0;
+    animation: slideUp 1s 1s ease-out forwards;
+  }
+
+  .tilt-card {
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transform-style: preserve-3d;
+    transition: transform 0.08s ease-out;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  }
+
+  .tilt-card-inner {
+    padding: 32px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .stat-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transform: translateZ(40px);
+  }
+  .stat-box .label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .stat-box .val { font-size: 28px; font-weight: 700; font-family: var(--mono); margin-top: 6px; }
+  .stat-box .val.green { color: #22c55e; }
+  .stat-box .val.red { color: #ef4444; }
+  .stat-box .val.blue { color: var(--accent); }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── Feature Grid (What/Why) ─── */
+  .features {
+    padding: 160px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .section-heading {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    text-align: center;
+    margin-bottom: 64px;
+    line-height: 1.15;
+  }
+  .section-heading .dim-text { color: var(--dim); }
+
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .feat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 40px;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  .feat-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .feat-card:hover {
+    background: var(--surface-hover);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+
+  .feat-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+  .feat-icon.blue { background: rgba(59,130,246,0.15); }
+  .feat-icon.purple { background: rgba(139,92,246,0.15); }
+  .feat-icon.green { background: rgba(34,197,94,0.15); }
+  .feat-icon.amber { background: rgba(245,158,11,0.15); }
+
+  .feat-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+  .feat-card p { color: var(--dim); font-size: 15px; line-height: 1.7; }
+
+  /* ─── How It Works (Pipeline) ─── */
+  .pipeline-section {
+    padding: 160px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+  .pipeline::before {
+    content: '';
+    position: absolute;
+    left: 32px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent), var(--accent2), transparent);
+  }
+
+  .pipe-step {
+    display: flex;
+    gap: 32px;
+    padding: 32px 0;
+    position: relative;
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .pipe-step.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .pipe-node {
+    width: 64px;
+    min-width: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .pipe-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 3px solid var(--accent);
+    box-shadow: 0 0 16px var(--glow);
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s;
+  }
+  .pipe-step:hover .pipe-dot {
+    background: var(--accent);
+    box-shadow: 0 0 24px rgba(59,130,246,0.6);
+    transform: scale(1.3);
+  }
+  .pipe-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 8px;
+  }
+
+  .pipe-content {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    transition: all 0.3s;
+  }
+  .pipe-step:hover .pipe-content {
+    background: var(--surface-hover);
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+  }
+  .pipe-content h4 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .pipe-content p {
+    color: var(--dim);
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  .pipe-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pipe-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+    background: rgba(59,130,246,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(59,130,246,0.2);
+  }
+
+  /* ─── Product CTA ─── */
+  .product-section {
+    padding: 160px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .product-card {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08));
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 24px;
+    padding: 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .product-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 50%, var(--glow), transparent 60%),
+                radial-gradient(circle at 70% 50%, var(--glow2), transparent 60%);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .product-card h3 {
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 800;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .product-card p {
+    color: var(--dim);
+    font-size: 18px;
+    max-width: 600px;
+    margin: 0 auto 40px;
+    position: relative;
+  }
+  .product-card .btn { position: relative; }
+
+  /* ─── Footer ─── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 48px;
+    text-align: center;
+    color: var(--dim);
+    font-size: 14px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 768px) {
+    .navbar { padding: 0 20px; }
+    .nav-links a { padding: 8px 10px; font-size: 13px; }
+    .features, .pipeline-section, .product-section { padding: 100px 20px; }
+    .feat-grid { grid-template-columns: 1fr; }
+    .tilt-card-inner { grid-template-columns: 1fr; }
+    .product-card { padding: 48px 24px; }
+    .hero-actions { flex-direction: column; align-items: center; }
+    .pipe-step { gap: 16px; }
+    .pipe-content { padding: 20px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1 id="title">loading… <span></span></h1>
-  <div class="meta" id="meta"></div>
-</header>
-<nav id="tabs"></nav>
-<main id="main"></main>
+
+<canvas id="particles"></canvas>
+
+<!-- ─── Navbar ─── -->
+<nav class="navbar" id="navbar">
+  <div class="nav-brand"><span class="dot"></span> Nexus</div>
+  <ul class="nav-links">
+    <li><a href="#hero">Home</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#how-it-works">How it Works</a></li>
+    <li><a href="#product">Product</a></li>
+    <li><a href="/app.html" class="btn btn-glow" style="margin-left:8px">Open Dashboard →</a></li>
+  </ul>
+</nav>
+
+<!-- ─── Hero ─── -->
+<section class="page-section hero" id="hero">
+  <div class="hero-badge"><span class="badge-dot"></span> Now Live — Mumbai DC1 Pilot</div>
+  <h1>EPC Intelligence,<br><span class="grad">Reimagined.</span></h1>
+  <p class="hero-sub">Three AI engines that verify bids, forecast risk, and automate commissioning — so hyperscale projects stay on schedule.</p>
+  <div class="hero-actions">
+    <a href="/app.html" class="btn btn-glow">Launch Pipeline →</a>
+    <a href="#how-it-works" class="btn btn-outline">See How It Works</a>
+  </div>
+  <div class="hero-visual" id="hero-visual">
+    <div class="tilt-card" id="tilt-card">
+      <div class="tilt-card-inner">
+        <div class="stat-box"><div class="label">Bid Compliance</div><div class="val green">96%</div></div>
+        <div class="stat-box"><div class="label">Slip Forecast</div><div class="val red">+12 d</div></div>
+        <div class="stat-box"><div class="label">Tests Passed</div><div class="val blue">5/7</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── What / Why ─── -->
+<section class="features" id="about">
+  <div class="section-label">Why Nexus</div>
+  <h2 class="section-heading">Built for the complexity<br><span class="dim-text">of hyperscale EPC.</span></h2>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon blue">📄</div>
+      <h3>Intelligent Document Ingestion</h3>
+      <p>Thousands of tender pages, bid responses, and policy documents are scanned, classified, and indexed into a searchable knowledge base with tamper-evident audit trails.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon purple">🔍</div>
+      <h3>Zero-Miss Bid Verification</h3>
+      <p>Every numeric requirement, tolerance, unit, and standard reference is checked algorithmically. Complex clauses get LLM reasoning — but only a rule-based pass can auto-clear.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon amber">⚠️</div>
+      <h3>Predictive Risk Forecasting</h3>
+      <p>Five specialised sub-agents monitor procurement, logistics, weather, workforce, and vendor history. Slip propagates along the critical path with ranked mitigations.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon green">✅</div>
+      <h3>Automated Commissioning QA</h3>
+      <p>Test cases are generated from IST procedures and split into machine-verifiable and engineer-only checks. Failures auto-open NCRs with cited precedents from past projects.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── How It Works ─── -->
+<section class="pipeline-section" id="how-it-works">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-heading">From raw documents<br><span class="dim-text">to audit-ready commissioning.</span></h2>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-node"><div class="pipe-dot"></div><span class="pipe-num">01</span></div>
+      <div class="pipe-content">
+        <h4>Foundation Layer</h4>
+        <p>Documents are ingested via AWS Textract, classified by taxonomy, and stored in a hash-chained audit log. A TF-IDF vector index powers clause-level RAG retrieval across projects.</p>
+        <div class="pipe-tags"><span class="pipe-tag">S3</span><span class="pipe-tag">Textract</span><span class="pipe-tag">SQLite → Aurora</span><span class="pipe-tag">Hash Chain</span></div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-node"><div class="pipe-dot"></div><span class="pipe-num">02</span></div>
+      <div class="pipe-content">
+        <h4>Engine 1 — Verification</h4>
+        <p>Vendor bids are compared against the tender clause by clause. Numeric checks (voltage, efficiency, transfer time) are deterministic. LLM reasoning is recorded but never auto-clears — human review is always required for ambiguous findings.</p>
+        <div class="pipe-tags"><span class="pipe-tag">Rule Engine</span><span class="pipe-tag">Claude Opus 5</span><span class="pipe-tag">Fulfilment Score</span></div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-node"><div class="pipe-dot"></div><span class="pipe-num">03</span></div>
+      <div class="pipe-content">
+        <h4>Engine 2 — Risk Assessment</h4>
+        <p>Sub-agents analyse procurement lead times, port congestion, monsoon forecasts, workforce availability, and vendor track records. Signals fuse into a risk score per activity, and slip propagates along the critical path with actionable mitigations.</p>
+        <div class="pipe-tags"><span class="pipe-tag">5 Sub-Agents</span><span class="pipe-tag">Critical Path</span><span class="pipe-tag">Monte Carlo</span></div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-node"><div class="pipe-dot"></div><span class="pipe-num">04</span></div>
+      <div class="pipe-content">
+        <h4>Engine 3 — Commissioning QA</h4>
+        <p>IST procedures (TIA-942, BICSI, Uptime Tier) generate test cases, auto-split into machine-verifiable and engineer-only. Historian telemetry executes automated checks; failures open NCRs with RAG-sourced precedent resolutions.</p>
+        <div class="pipe-tags"><span class="pipe-tag">Auto/Manual Split</span><span class="pipe-tag">NCR + Precedent</span><span class="pipe-tag">EventBridge</span></div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-node"><div class="pipe-dot"></div><span class="pipe-num">05</span></div>
+      <div class="pipe-content">
+        <h4>Integration & Event Bus</h4>
+        <p>All engines communicate via an event bus. An NCR in commissioning instantly lowers the vendor's score in verification. A late shipment holds commissioning cases. A resolved NCR becomes a precedent for the next project.</p>
+        <div class="pipe-tags"><span class="pipe-tag">EventBridge</span><span class="pipe-tag">DynamoDB Audit</span><span class="pipe-tag">Cross-Engine</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Product CTA ─── -->
+<section class="product-section" id="product">
+  <div class="product-card">
+    <h3>See it running. Right now.</h3>
+    <p>The full Nexus pipeline is live on the Mumbai DC1 pilot — 24 MW hyperscale data centre. Explore the dashboards, inspect deviations, and review the audit trail.</p>
+    <a href="/app.html" class="btn btn-glow" style="padding: 14px 32px; font-size: 16px;">Open Live Dashboard →</a>
+  </div>
+</section>
+
 
 <script>
-const $ = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
-const esc = (s) => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-const pct = (x) => (x * 100).toFixed(0) + '%';
-const sevClass = (s) => ({high:'bad', medium:'warn', low:'dim', none:'dim'}[s] || 'dim');
-const statusClass = (s) => ({compliant:'ok', passed:'ok', partial:'warn', needs_review:'warn', open:'bad',
-                             deviation:'bad', missing:'bad'}[s] || 'dim');
-const tag = (s, cls) => `<span class="tag ${cls || statusClass(s)}">${esc(s)}</span>`;
-const table = (head, rows) =>
-  `<table><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+/* ─── Floating Particles ─── */
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+const PARTICLE_COUNT = 60;
 
-const TABS = {
-  'Overview': (s) => {
-    const cards = [
-      ['Slip forecast', s.engine2.project_slip_days + ' d', s.engine2.project_slip_days > 0 ? 'bad' : 'ok'],
-      ['Activities flagged', s.engine2.flagged.length],
-      ['Bids verified', s.engine1.length],
-      ['Open NCRs', s.dashboards.quality.open_ncrs.length, s.dashboards.quality.open_ncrs.length ? 'bad' : 'ok'],
-      ['Commissioning', `${s.dashboards.quality.commissioning.passed}/${s.dashboards.quality.commissioning.total}`],
-      ['Package', s.engine3.package.ready ? 'READY' : 'NOT READY', s.engine3.package.ready ? 'ok' : 'warn'],
-    ].map(([k, v, c]) => `<div class="card"><div class="k">${k}</div><div class="v ${c || ''}">${esc(v)}</div></div>`).join('');
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
-    const kpi = Object.entries(s.kpis).map(([k, v]) =>
-      `<tr><td>${esc(k.replace(/_/g, ' '))}</td><td class="num">${esc(v)}</td></tr>`);
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = (Math.random() - 0.5) * 0.3;
+    this.r = Math.random() * 1.5 + 0.5;
+    this.alpha = Math.random() * 0.3 + 0.05;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+    if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(59,130,246,${this.alpha})`;
+    ctx.fill();
+  }
+}
 
-    const risks = s.dashboards.pm.top_risks.map(r => `<tr>
-      <td class="num">${esc(r.activity)}</td><td class="num ${r.slip > 0 ? 'bad' : ''}">${r.slip} d</td>
-      <td class="num">${r.score.toFixed(2)}</td><td>${esc(r.do || '—')}</td></tr>`);
+for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
 
-    return `<h2>Portfolio</h2><div class="cards">${cards}</div>
-      <h2>Top risks (PM view)</h2>${table(['Activity', 'Slip', 'Score', 'Recommended action'], risks)}
-      <h2>Leading indicators</h2>${table(['KPI', 'Value'], kpi)}`;
-  },
+function drawLines() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 150) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(59,130,246,${0.06 * (1 - d / 150)})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
 
-  'Engine 1 · Verification': (s) => {
-    const vendors = s.engine1.map(r => `<tr>
-      <td>${esc(r.vendor)}<div class="sub">${esc(r.bid)} · ₹${(r.price || 0).toLocaleString('en-IN')} · ${r.lead_weeks}w</div></td>
-      <td class="num">${pct(r.compliance_ratio)}<div class="bar"><i style="width:${r.compliance_ratio * 100}%"></i></div></td>
-      <td class="num">${r.fulfilment.score.toFixed(2)}</td>
-      <td class="num ${r.vendor_risk > .3 ? 'bad' : 'ok'}">${r.vendor_risk.toFixed(2)}</td>
-      <td class="num">${Object.entries(r.counts).filter(([, n]) => n).map(([k, n]) => `${n} ${k}`).join(' · ')}</td></tr>`);
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+  drawLines();
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
 
-    const devs = s.engine1.flatMap(r => r.deviations.map(f => `<tr>
-      <td class="num">${esc(r.vendor)}</td>
-      <td>${tag(f.severity, sevClass(f.severity))}</td>
-      <td>${tag(f.status)}</td>
-      <td>${esc(f.requirement_text)}<div class="sub">${esc((f.checks || [])[0]?.note || '')}</div></td>
-      <td class="num ${f.review === 'pending' ? 'dim' : 'ok'}">${esc(f.review)}</td></tr>`));
+/* ─── Navbar Scroll ─── */
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 50);
+});
 
-    return `<h2>Bid comparison</h2>${table(['Vendor', 'Compliance', 'Fulfilment', 'Vendor risk', 'Findings'], vendors)}
-      <h2>Deviations &amp; review queue</h2>${table(['Vendor', 'Sev', 'Status', 'Requirement', 'Review'], devs)}`;
-  },
+/* ─── 3D Tilt on Hero Card ─── */
+const heroVisual = document.getElementById('hero-visual');
+const tiltCard = document.getElementById('tilt-card');
+let tiltRAF;
 
-  'Engine 2 · Risk': (s) => {
-    const rows = s.engine2.activities.map(a => {
-      const flagged = s.engine2.flagged.includes(a.activity);
-      const sigs = flagged ? `<ul class="sig">${a.signals.map(x => `<li>${esc(x.source)}: ${esc(x.reason)}</li>`).join('')}</ul>` : '';
-      const mits = flagged ? a.mitigations.slice(0, 2).map(m =>
-        `<div>${esc(m.action)}<span class="sub"> — ${m.days_saved}d, ₹${m.cost_inr.toLocaleString('en-IN')}${m.covers_slip ? ' ✓ covers slip' : ''}</span></div>`).join('') : '—';
-      return `<tr>
-        <td class="num">${esc(a.activity)}</td>
-        <td>${esc(a.name)}${sigs}</td>
-        <td class="num ${a.slip_days > 0 ? 'bad' : 'dim'}">${a.slip_days} d</td>
-        <td class="num">${a.score.toFixed(2)}</td>
-        <td>${mits}</td></tr>`;
-    });
-    return `<h2>Forecast as of ${esc(s.engine2.as_of)}</h2>
-      <div class="cards"><div class="card"><div class="k">Project finish slip</div>
-        <div class="v ${s.engine2.project_slip_days > 0 ? 'bad' : 'ok'}">${s.engine2.project_slip_days} days</div></div></div>
-      <h2>Critical path</h2>${table(['ID', 'Activity / signals', 'Slip', 'Score', 'Ranked mitigations'], rows)}`;
-  },
-
-  'Engine 3 · Commissioning': (s) => {
-    const cases = s.engine3.package.cases.map(c => `<tr>
-      <td>${esc(c.text)}</td><td>${tag(c.mode, c.mode === 'auto' ? 'ok' : 'dim')}</td><td>${tag(c.status)}</td>
-      <td class="num sub">${esc((c.results || []).at(-1)?.evidence || '')}</td></tr>`);
-    const ncrs = s.engine3.ncrs.map(n => `<tr>
-      <td class="num">${esc(n.id)}</td><td>${tag(n.status)}</td><td class="num">${esc(n.vendor || '—')}</td>
-      <td>${esc(n.symptom)}<div class="sub">precedent ${esc(n.recommendations[0].precedent)}: ${esc(n.recommendations[0].resolution)}</div></td></tr>`);
-    const p = s.engine3.package.summary;
-    const cards = [['Test cases', p.cases], ['Automated', p.auto], ['Manual', p.manual], ['Passed', p.passed],
-                   ['NCRs open', p.ncr_open, p.ncr_open ? 'bad' : 'ok']]
-      .map(([k, v, c]) => `<div class="card"><div class="k">${k}</div><div class="v ${c || ''}">${v}</div></div>`).join('');
-    return `<h2>Package — ${s.engine3.package.ready ? '<span class="ok">READY</span>' : '<span class="warn">NOT READY</span>'}</h2>
-      <div class="cards">${cards}</div>
-      <h2>Test cases</h2>${table(['Case', 'Mode', 'Status', 'Evidence'], cases)}
-      <h2>Non-conformance reports</h2>${table(['NCR', 'Status', 'Vendor', 'Symptom / recommendation'], ncrs)}
-      <h2>As-commissioned markdown</h2><pre>${esc(s.engine3.markdown)}</pre>`;
-  },
-
-  'Audit trail': (s) => {
-    const rows = s.audit.log.map(e => `<tr>
-      <td class="num">${e.seq}</td>
-      <td class="num sub">${new Date(e.ts * 1000).toLocaleTimeString()}</td>
-      <td class="num">${esc(e.actor)}</td><td class="num">${esc(e.action)}</td>
-      <td class="sub">${esc(JSON.stringify(e.payload)).slice(0, 180)}</td></tr>`);
-    return `<h2>Hash chain ${s.audit.valid ? '<span class="ok">valid</span>' : '<span class="bad">BROKEN</span>'}
-      · ${s.audit.log.length} entries</h2>${table(['#', 'Time', 'Actor', 'Action', 'Payload'], rows)}`;
-  },
-};
-
-fetch('/api/state').then(r => r.json()).then(state => {
-  document.getElementById('title').innerHTML =
-    `Nexus <span>— ${esc(state.project.name)}</span>`;
-  document.getElementById('meta').textContent =
-    `${state.project.id} · ${state.project.client} · as of ${state.project.today}`;
-
-  const nav = document.getElementById('tabs'), main = document.getElementById('main');
-  Object.entries(TABS).forEach(([name, render], i) => {
-    const sec = $(`<section${i ? '' : ' class="on"'}></section>`);
-    sec.innerHTML = render(state);
-    main.append(sec);
-    const btn = $(`<button aria-selected="${!i}">${name}</button>`);
-    btn.onclick = () => {
-      nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b === btn));
-      main.querySelectorAll('section').forEach(x => x.classList.toggle('on', x === sec));
-    };
-    nav.append(btn);
+heroVisual.addEventListener('mousemove', (e) => {
+  cancelAnimationFrame(tiltRAF);
+  tiltRAF = requestAnimationFrame(() => {
+    const rect = heroVisual.getBoundingClientRect();
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rotX = ((y - cy) / cy) * -8;
+    const rotY = ((x - cx) / cx) * 8;
+    tiltCard.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
   });
-}).catch(e => { document.getElementById('main').innerHTML = `<pre class="bad">${esc(e)}</pre>`; });
+});
+heroVisual.addEventListener('mouseleave', () => {
+  tiltCard.style.transition = 'transform 0.6s cubic-bezier(0.25,1,0.5,1)';
+  tiltCard.style.transform = 'rotateX(0) rotateY(0)';
+});
+heroVisual.addEventListener('mouseenter', () => {
+  tiltCard.style.transition = 'none';
+});
+
+/* ─── Scroll-triggered reveal ─── */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.feat-card, .pipe-step').forEach(el => observer.observe(el));
+
+/* ─── Smooth scroll for nav links ─── */
+document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
 </script>
 </body>
 </html>
