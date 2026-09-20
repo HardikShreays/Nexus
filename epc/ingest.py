@@ -6,6 +6,7 @@ Document text format (what Textract/Unstructured output gets normalised to):
     [PWR-UPS-02] Efficiency at 50% load >= 96 %
 Lines without a [ID] get auto-numbered. Blank lines and other headings are ignored.
 
+
 ponytail: .txt/.md only. PDFs/DWGs go through Textract before reaching here — add a loader
 when the pilot's document inventory (Phase 0 discovery) says which formats actually exist.
 """
@@ -87,9 +88,11 @@ def extract_params(text, lenient=False):
         tier = {"tier1": "tieri", "tier2": "tierii", "tier3": "tieriii", "tier4": "tieriv"}.get(tier, tier)
         out.append({"param": "tier", "op": "=", "value": tier, "dim": "text"})
     rest = TIER_RE.sub(" ", STANDARD_RE.sub(" ", text))
+    
     for m in REDUND_RE.finditer(rest):
         out.append({"param": "redundancy", "op": "=", "value": m.group(1).upper().replace(" ", ""), "dim": "text"})
     rest = LOAD_COND_RE.sub(lambda m: f" load{m.group(1)}pct ", REDUND_RE.sub(" ", rest))
+    
     for m in NUM_RE.finditer(rest):
         raw = m.group("param").strip().lower()
         op = {"≤": "<=", "≥": ">=", ":": "=", None: "="}.get(m.group("op"), m.group("op"))
@@ -100,6 +103,7 @@ def extract_params(text, lenient=False):
         key = param_key(raw.split(",")[-1])
         unit = (m.group("unit") or "").lower()
         # a bare number is only a requirement when an explicit comparator says so ("power factor >= 0.99")
+        
         if not key or not (unit or lenient or m.group("op") in ("<=", ">=", "<", ">", "≤", "≥")):
             continue
         dim, factor = UNITS.get(unit, ("number", 1))
@@ -111,6 +115,7 @@ def extract_params(text, lenient=False):
 
 def parse_clauses(text, prefix, lenient=False):
     heading, n, out = "", 0, []
+    
     for line in text.splitlines():
         line = line.strip()
         if not line:
