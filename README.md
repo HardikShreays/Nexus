@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>⚡ Nexus</h1>
+  <h1>⚡ Algo-Nexus</h1>
   <h3>🌟 Next-Gen EPC Project Intelligence Platform</h3>
   
 
